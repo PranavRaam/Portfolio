@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SplitType from 'split-type';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Coffee, Bug, Brain, Cpu } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -31,7 +31,7 @@ const TextReveal = () => {
 
     // Initial loading animation
     const tl = gsap.timeline();
-    
+
     tl.from('.loader', {
       scaleY: 0,
       duration: 1.5,
@@ -69,9 +69,9 @@ const TextReveal = () => {
 
     // Text reveal animations
     const reveals = gsap.utils.toArray('.reveal-text');
-    reveals.forEach((text, i) => {
+    reveals.forEach((text) => {
       const chars = new SplitType(text, { types: 'chars' });
-      
+
       gsap.from(chars.chars, {
         opacity: 0,
         y: 100,
@@ -88,7 +88,6 @@ const TextReveal = () => {
       });
     });
 
-    // Cleanup
     return () => {
       window.removeEventListener('mousemove', moveCursor);
     };
@@ -101,17 +100,14 @@ const TextReveal = () => {
         <div className="w-full h-full bg-white rounded-full" />
       </div>
 
-      {/* Loading Screen */}
-      {/* <div className="loader fixed inset-0 bg-red-600 z-40" /> */}
-
       <div ref={containerRef} className="min-h-[400vh] bg-black text-white overflow-hidden">
         {/* Hero Section */}
         <div className="h-screen flex items-center justify-center relative">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-black to-black" />
           <h1 className="split-text text-9xl md:text-[12rem] font-black tracking-tighter text-center mix-blend-difference">
-            DIGITAL
+            404: BRAIN
             <br />
-            EVOLUTION
+            NOT FOUND
           </h1>
         </div>
 
@@ -133,13 +129,36 @@ const TextReveal = () => {
             ))}
           </div>
 
+          {/* Introduction Section */}
           <div className="parallax-section max-w-7xl mx-auto">
             <div className="reveal-text">
-              <h2 className="text-6xl md:text-9xl font-black text-red-600 mb-8">
-                WE CREATE
+              <h2 className="text-6xl md:text-9xl font-black text-red-600 mb-8 flex items-center gap-4">
+                SYSTEM.INIT() <Coffee className="inline-block animate-bounce" />
+              </h2>
+              <p className="text-2xl md:text-4xl font-medium text-white leading-relaxed">
+                Hey! I'm <span className="text-red-600 font-bold">Pranav Raam</span>, 
+                professional bug creator and occasional code whisperer. 
+                Currently maintaining a CGPA of 8.7 while trying to convince my laptop that AI won't take over the world 
+                (it's not buying it).
+              </p>
+              <p className="text-2xl md:text-4xl font-medium text-white leading-relaxed mt-6">
+                Ex-<span className="text-red-600 font-bold">Gen AI Developer</span> @ Cognizant, 
+                where I spent 9 months teaching machines to think and coffee to last longer.
+                <Bug className="inline-block ml-2 animate-spin" />
+              </p>
+            </div>
+          </div>
+
+          {/* Tech Sections with Icons */}
+          <div className="parallax-section max-w-7xl mx-auto">
+            <div className="reveal-text">
+              <h2 className="text-6xl md:text-9xl font-black text-red-600 mb-8 flex items-center gap-4">
+                ERROR_LOG.print() <Brain className="inline-block animate-pulse" />
               </h2>
               <p className="text-4xl md:text-7xl font-bold text-white leading-tight">
-                IMMERSIVE DIGITAL EXPERIENCES
+                "It works on my machine" 
+                <br />
+                - Me, probably
               </p>
             </div>
           </div>
@@ -147,37 +166,36 @@ const TextReveal = () => {
           <div className="parallax-section max-w-7xl mx-auto">
             <div className="reveal-text">
               <h2 className="text-6xl md:text-9xl font-black text-white mb-8">
-                WE DELIVER
+                COFFEE.status
               </h2>
               <p className="text-4xl md:text-7xl font-bold text-red-600 leading-tight">
-                CUTTING-EDGE SOLUTIONS
+                CRITICALLY_LOW
+                <Coffee className="inline-block ml-4 animate-bounce" />
               </p>
             </div>
           </div>
 
           <div className="parallax-section max-w-7xl mx-auto">
             <div className="reveal-text">
-              <h2 className="text-6xl md:text-9xl font-black text-red-600 mb-8">
-                WE PUSH
+              <h2 className="text-6xl md:text-9xl font-black text-red-600 mb-8 flex items-center gap-4">
+                BRAIN.exe <Cpu className="inline-block animate-spin" />
               </h2>
               <p className="text-4xl md:text-7xl font-bold text-white leading-tight">
-                CREATIVE BOUNDARIES
-              </p>
-            </div>
-          </div>
-
-          <div className="parallax-section max-w-7xl mx-auto">
-            <div className="reveal-text">
-              <h2 className="text-6xl md:text-9xl font-black text-white mb-8">
-                WE BUILD
-              </h2>
-              <p className="text-4xl md:text-7xl font-bold text-red-600 leading-tight">
-                THE FUTURE OF WEB
+                Status: 404 Not Found
+                <br />
+                <span className="text-2xl text-red-600">Try restarting with coffee</span>
               </p>
             </div>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+      `}</style>
     </>
   );
 };
