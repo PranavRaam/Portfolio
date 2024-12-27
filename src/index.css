@@ -1,0 +1,75 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+body {
+  cursor: none;
+  overflow-x: hidden;
+}
+
+@layer components {
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .perspective {
+    perspective: 1000px;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+  }
+
+  .tile-front {
+    transform: rotateX(0deg) translateZ(0);
+  }
+
+  .tile-back {
+    transform: rotateX(180deg) translateZ(0);
+  }
+
+  .tile-content::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-size: 600% 600%;
+    background-position: inherit;
+    clip-path: inset(0 round 0.25em);
+  }
+
+
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-smooth iframe {
+    pointer-events: none;
+  }
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
