@@ -3,13 +3,41 @@ import * as THREE from 'three';
 import gsap from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 import Lenis from '@studio-freight/lenis';
-import { Music, Brain, Wand2,} from 'lucide-react';
+import { Music, Brain, Wand2 } from 'lucide-react';
 import Board from './components/GridLayout/Board';
 import TunnelEffect from './components/TunnelShader/TunnelEffect';
 import TextRevealSection from './components/TextAnimation/TextRevealSection';
 
-
 gsap.registerPlugin(ScrollTrigger);
+
+const useWindowSize = () => {
+  const [size, setSize] = useState({ 
+    width: typeof window !== 'undefined' ? window.innerWidth : 0, 
+    height: typeof window !== 'undefined' ? window.innerHeight : 0 
+  });
+
+  useEffect(() => {
+    const updateSize = () => {
+      setSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  return size;
+};
+
+const EasterEggButton = ({ icon: Icon, isActive, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`p-3 rounded-full ${
+      isActive ? 'bg-red-500' : 'bg-gray-800'
+    } hover:bg-red-600 transition-all duration-300`}
+  >
+    <Icon size={24} className="text-white" />
+  </button>
+);
 
 const App = () => {
   const uniformsRef = useRef({
@@ -21,63 +49,40 @@ const App = () => {
   const appRef = useRef(null);
   const lenisRef = useRef(null);
   const audioRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [activeEasterEgg, redsetActiveEasterEgg] = useState(null);
   const { width, height } = useWindowSize();
 
-  // Konami code implementation
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [activeEasterEgg, setActiveEasterEgg] = useState(null);
   const [konamiCode, setKonamiCode] = useState([]);
+  
   const konamiSequence = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
 
-  useEffect(() => {
-    const handleKeyPress = (e) => {
-      const newCode = [...konamiCode, e.key];
-      if (newCode.length > konamiSequence.length) {
-        newCode.shift();
-      }
-      setKonamiCode(newCode);
-
-      if (newCode.join('') === konamiSequence.join('')) {
-        triggerMatrixEffect();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [konamiCode]);
-
   const triggerMatrixEffect = () => {
-    const chars = 'YOUHAVEBEENRICKROLLED@#$%^&*';
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    canvas.style.position = 'fixed';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    canvas.style.zIndex = '1000';
-    canvas.style.pointerEvents = 'none';
+    const chars = 'YOUHAVEBEENRICKROLLED@#$%^&*';
+    
+    canvas.style.cssText = 'position:fixed;top:0;left:0;z-index:1000;pointer-events:none;';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     document.body.appendChild(canvas);
 
-    let w = canvas.width = window.innerWidth;
-    let h = canvas.height = window.innerHeight;
-
-    const cols = Math.floor(w / 20);
+    const cols = Math.floor(canvas.width / 20);
     const ypos = Array(cols).fill(0);
 
     ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, w, h);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const matrix = () => {
       ctx.fillStyle = '#0001';
-      ctx.fillRect(0, 0, w, h);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.fillStyle = '#0f0';
       ctx.font = '15pt monospace';
 
       ypos.forEach((y, ind) => {
         const text = chars.charAt(Math.floor(Math.random() * chars.length));
-        const x = ind * 20;
-        ctx.fillText(text, x, y);
-        if (y > 100 + Math.random() * 10000) ypos[ind] = 0;
-        else ypos[ind] = y + 20;
+        ctx.fillText(text, ind * 20, y);
+        ypos[ind] = y > 100 + Math.random() * 10000 ? 0 : y + 20;
       });
     };
 
@@ -88,10 +93,11 @@ const App = () => {
     }, 5000);
   };
 
-  // Audio visualization easter egg
   const initAudioVisualization = () => {
     if (!audioRef.current) {
-      audioRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioRef.current = new AudioContext();
+      
       const oscillator = audioRef.current.createOscillator();
       const gainNode = audioRef.current.createGain();
 
@@ -108,16 +114,92 @@ const App = () => {
       setTimeout(() => {
         oscillator.stop();
         setIsPlaying(false);
+        audioRef.current = null;
       }, 1000);
     }
   };
+
+  const initializeSectionAnimations = () => {
+    // Hero Section Animation
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: '.hero-section',
+        start: 'top top',
+        end: '+=50%',
+        scrub: 1,
+      },
+    })
+    .fromTo('.red-banner', 
+      { clipPath: 'inset(50% 50%)', opacity: 0 },
+      { clipPath: 'inset(0% 0%)', opacity: 0.15, duration: 1.5, ease: 'power3.inOut' }
+    )
+    .to('.hero-content', { opacity: 0, duration: 0.5, ease: 'power2.in' });
+
+    // Grid Animation
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: '.hero-section',
+        start: '15% top',
+        end: '+=100%',
+        scrub: 1,
+      },
+    })
+    .fromTo('.grid-container', 
+      { opacity: 0, scale: 0.8 },
+      { opacity: 1, scale: 1, duration: 1, ease: 'power2.out' }
+    )
+    .to('.grid-tile', {
+      rotationY: 180,
+      stagger: { amount: 1.5, grid: [10, 10], from: 'center', ease: 'power2.inOut' },
+    });
+
+    // Text Reveal Animation
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: '.text-reveal-section',
+        start: 'top center',
+        end: '+=200%',
+        pin: true,
+        scrub: 1.2,
+      },
+    })
+    .to('.reveal-circle', { scale: 35, duration: 1.5, ease: 'power2.inOut' })
+    .from('.text-line', {
+      y: 120,
+      opacity: 0,
+      stagger: 0.25,
+      duration: 0.8,
+      ease: 'power2.out',
+    }, '-=0.8')
+    .to('.text-line', {
+      y: -120,
+      opacity: 0,
+      stagger: 0.25,
+      duration: 0.8,
+      ease: 'power2.in',
+    }, '+=1');
+  };
+
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      const newCode = [...konamiCode, e.key];
+      if (newCode.length > konamiSequence.length) newCode.shift();
+      setKonamiCode(newCode);
+
+      if (newCode.join('') === konamiSequence.join('')) {
+        triggerMatrixEffect();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [konamiCode]);
 
   useEffect(() => {
     lenisRef.current = new Lenis({
       lerp: 0.075,
       smooth: true,
       direction: 'vertical',
-      gestureOrientation: 'vertical',
       smoothWheel: true,
       smoothTouch: true,
       touchMultiplier: 1.5,
@@ -146,7 +228,7 @@ const App = () => {
     return () => {
       lenisRef.current?.destroy();
       gsap.ticker.remove(tickerCallback);
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
     };
   }, []);
 
@@ -154,202 +236,9 @@ const App = () => {
     uniformsRef.current.iResolution.value.set(width, height);
   }, [width, height]);
 
-
-  const initializeSectionAnimations = () => {
-    // // Initial Banner Animation
-    const initialBannerTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: '.hero-section',
-        start: 'top top',
-        end: '+=50%',
-        scrub: 1,
-        invalidateOnRefresh: true,
-      },
-    });
-
-    initialBannerTimeline
-      .fromTo(
-        '.red-banner',
-        {
-          clipPath: 'inset(50% 50%)',
-          opacity: 0
-        },
-        {
-          clipPath: 'inset(0% 0%)',
-          opacity: 0.15,
-          duration: 1.5,
-          ease: 'power3.inOut'
-        }
-      )
-      .to('.hero-content', {
-        opacity: 0,
-        duration: 0.5,
-        ease: 'power2.in'
-      });
-
-    // Grid Animation
-    const gridTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: '.hero-section',
-        start: '15% top',
-        end: '+=100%',
-        scrub: 1,
-        invalidateOnRefresh: true,
-      },
-    });
-
-    gridTimeline
-      .fromTo('.grid-container', {
-        opacity: 0,
-        scale: 0.8,
-      }, {
-        opacity: 1,
-        scale: 1,
-        duration: 1,
-        ease: 'power2.out'
-      })
-      .to('.grid-tile', {
-        rotationY: 180,
-        stagger: {
-          amount: 1.5,
-          grid: [10, 10],
-          from: 'center',
-          ease: 'power2.inOut',
-        },
-      });
-
-    // Final Banner Animation
-    const finalBannerTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: '.hero-section',
-        start: '50% center',
-        end: '+=75%',
-        scrub: 1,
-        invalidateOnRefresh: true,
-      },
-    });
-
-    finalBannerTimeline
-      .to('.red-banner', {
-        opacity: 1,
-        duration: 1,
-        ease: 'power2.inOut'
-      })
-      .to('.grid-container', {
-        opacity: 0,
-        scale: 1.2,
-        duration: 1,
-        ease: 'power2.in'
-      }, '-=0.5');
-
-    // Text Reveal Animation
-    const textTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: '.text-reveal-section',
-        start: 'top center',
-        end: '+=200%',
-        pin: true,
-        scrub: 1.2,
-        anticipatePin: 1,
-      },
-    });
-
-    textTimeline
-      .to('.reveal-circle', {
-        scale: 35,
-        duration: 1.5,
-        ease: 'power2.inOut',
-      })
-      .from('.text-line', {
-        y: 120,
-        opacity: 0,
-        stagger: 0.25,
-        duration: 0.8,
-        ease: 'power2.out',
-      }, '-=0.8')
-      .to('.text-line', {
-        y: -120,
-        opacity: 0,
-        stagger: 0.25,
-        duration: 0.8,
-        ease: 'power2.in',
-      }, '+=1');
-
-    // Tunnel Effect Animation
-    const tunnelTimeline = gsap.timeline({
-      scrollTrigger: {
-        trigger: '.tunnel-section',
-        start: 'top bottom',
-        end: 'center center',
-        scrub: 1.5,
-      },
-    });
-
-    tunnelTimeline
-      .fromTo('.tunnel-section',
-        {
-          opacity: 0,
-          scale: 0.95
-        },
-        {
-          opacity: 1,
-          scale: 1,
-          duration: 1.5,
-          ease: 'power2.out'
-        }
-      );
-
-  //   const particles = [];
-  //   const particleCount = 100;
-
-  //   for (let i = 0; i < particleCount; i++) {
-  //     particles.push({
-  //       x: Math.random() * width,
-  //       y: Math.random() * height,
-  //       size: Math.random() * 3 + 1,
-  //       speedX: Math.random() * 2 - 1,
-  //       speedY: Math.random() * 2 - 1
-  //     });
-  //   }
-
-  //   const canvas = document.createElement('canvas');
-  //   canvas.style.position = 'fixed';
-  //   canvas.style.top = '0';
-  //   canvas.style.left = '0';
-  //   canvas.style.pointerEvents = 'none';
-  //   canvas.style.zIndex = '1';
-  //   canvas.width = width;
-  //   canvas.height = height;
-
-  //   document.body.appendChild(canvas);
-  //   const ctx = canvas.getContext('2d');
-
-  //   const animateParticles = () => {
-  //     ctx.clearRect(0, 0, width, height);
-  //     ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
-
-  //     particles.forEach(particle => {
-  //       particle.x += particle.speedX;
-  //       particle.y += particle.speedY;
-
-  //       if (particle.x < 0 || particle.x > width) particle.speedX *= -1;
-  //       if (particle.y < 0 || particle.y > height) particle.speedY *= -1;
-
-  //       ctx.beginPath();
-  //       ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-  //       ctx.fill();
-  //     });
-
-  //     requestAnimationFrame(animateParticles);
-  //   };
-
-  //   animateParticles();
-
-
-  };
-
   return (
     <>
+      {/* Progress Bar */}
       <div className="fixed top-0 left-0 w-full h-1 bg-gray-800 z-50">
         <div
           className="h-full bg-red-500 transition-all duration-150"
@@ -357,29 +246,27 @@ const App = () => {
         />
       </div>
 
-      {/* Easter Egg Trigger Buttons */}
+      {/* Easter Egg Buttons */}
       <div className="fixed right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 z-50">
-        <button
+        <EasterEggButton
+          icon={Music}
+          isActive={activeEasterEgg === 'music'}
           onClick={() => {
             initAudioVisualization();
             setActiveEasterEgg('music');
           }}
-          className={`p-3 rounded-full ${activeEasterEgg === 'music' ? 'bg-red-500' : 'bg-gray-800'
-            } hover:bg-red-600 transition-all duration-300`}
-        >
-          <Music size={24} />
-        </button>
-        <button
+        />
+        <EasterEggButton
+          icon={Brain}
+          isActive={activeEasterEgg === 'ai'}
           onClick={() => {
             triggerMatrixEffect();
             setActiveEasterEgg('ai');
           }}
-          className={`p-3 rounded-full ${activeEasterEgg === 'ai' ? 'bg-red-500' : 'bg-gray-800'
-            } hover:bg-red-600 transition-all duration-300`}
-        >
-          <Brain size={24} />
-        </button>
-        <button
+        />
+        <EasterEggButton
+          icon={Wand2}
+          isActive={activeEasterEgg === 'magic'}
           onClick={() => {
             setActiveEasterEgg('magic');
             gsap.to('.hero-content', {
@@ -391,18 +278,12 @@ const App = () => {
               repeat: 1
             });
           }}
-          className={`p-3 rounded-full ${activeEasterEgg === 'magic' ? 'bg-red-500' : 'bg-gray-800'
-            } hover:bg-red-600 transition-all duration-300`}
-        >
-          <Wand2 size={24} />
-        </button>
+        />
       </div>
 
       <div ref={appRef} className="relative bg-black text-white">
-        {/* Existing sections remain the same */}
         <section className="hero-section w-full h-screen relative overflow-hidden">
-          <div className="red-banner absolute inset-0 bg-red-500 z-20"></div>
-
+          <div className="red-banner absolute inset-0 bg-red-500 z-20" />
           <div className="hero-content absolute inset-0 flex flex-col items-center justify-center z-30">
             <h1 className="text-7xl md:text-8xl font-bold text-center mb-8 tracking-tight">
               Welcome to My Portfolio
@@ -417,13 +298,13 @@ const App = () => {
             </div>
           </div>
         </section>
-        <Board />
 
+        <Board />
         <TextRevealSection />
 
         <section className="tunnel-section w-full h-screen relative">
           <TunnelEffect uniformsRef={uniformsRef} />
-          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             <div className="text-center space-y-6 px-4">
               <h2 className="text-5xl md:text-6xl font-bold">Explore My Work</h2>
               <p className="text-2xl md:text-3xl opacity-80 max-w-2xl">
@@ -463,20 +344,3 @@ const App = () => {
 };
 
 export default App;
-
-const useWindowSize = () => {
-  const [size, setSize] = useState({ width: 0, height: 0 });
-
-  useEffect(() => {
-    const updateSize = () => {
-      setSize({ width: window.innerWidth, height: window.innerHeight });
-    };
-
-    window.addEventListener('resize', updateSize);
-    updateSize();
-
-    return () => window.removeEventListener('resize', updateSize);
-  }, []);
-
-  return size;
-};
