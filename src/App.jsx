@@ -1,345 +1,388 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense, useCallback } from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import * as THREE from 'three';
-import gsap from 'gsap';
+import { gsap } from 'gsap';
 import ScrollTrigger from 'gsap/ScrollTrigger';
 import Lenis from '@studio-freight/lenis';
-import { Music, Brain, Wand2 } from 'lucide-react';
-import Board from './components/GridLayout/Board';
-import TunnelEffect from './components/TunnelShader/TunnelEffect';
-import TextRevealSection from './components/TextAnimation/TextRevealSection';
+import confetti from 'canvas-confetti';
+import { 
+  Music, Brain, Wand2, Terminal, GitBranch, Code2,
+  Sparkles, Palette, Gamepad2, Moon, Sun, Cloud,
+  Zap, Globe, Compass
+} from 'lucide-react';
 
+// Lazy loaded components
+const Board = React.lazy(() => import('./components/GridLayout/Board'));
+const TunnelEffect = React.lazy(() => import('./components/TunnelShader/TunnelEffect'));
+const TextRevealSection = React.lazy(() => import('./components/TextAnimation/TextRevealSection'));
+const CustomCursor = React.lazy(() => import('./components/CustomCursor'));
+
+// Register GSAP plugin
 gsap.registerPlugin(ScrollTrigger);
 
+// Theme configurations
+const THEMES = {
+  DARK: 'dark',
+  LIGHT: 'light',
+  CYBER: 'cyber',
+  RETRO: 'retro',
+  NATURE: 'nature',
+  SPACE: 'space'
+};
+
+const THEME_CONFIGS = {
+  [THEMES.DARK]: {
+    background: 'bg-black',
+    text: 'text-white',
+    accent: 'text-red-500',
+    hover: 'hover:text-red-400'
+  },
+  [THEMES.LIGHT]: {
+    background: 'bg-white',
+    text: 'text-black',
+    accent: 'text-blue-500',
+    hover: 'hover:text-blue-400'
+  },
+  [THEMES.CYBER]: {
+    background: 'bg-gray-900',
+    text: 'text-cyan-400',
+    accent: 'text-purple-500',
+    hover: 'hover:text-purple-400'
+  },
+  [THEMES.RETRO]: {
+    background: 'bg-amber-100',
+    text: 'text-amber-900',
+    accent: 'text-orange-600',
+    hover: 'hover:text-orange-500'
+  },
+  [THEMES.NATURE]: {
+    background: 'bg-green-900',
+    text: 'text-emerald-200',
+    accent: 'text-yellow-400',
+    hover: 'hover:text-yellow-300'
+  },
+  [THEMES.SPACE]: {
+    background: 'bg-indigo-950',
+    text: 'text-violet-200',
+    accent: 'text-fuchsia-500',
+    hover: 'hover:text-fuchsia-400'
+  }
+};
+
+// Custom hooks
 const useWindowSize = () => {
-  const [size, setSize] = useState({ 
-    width: typeof window !== 'undefined' ? window.innerWidth : 0, 
-    height: typeof window !== 'undefined' ? window.innerHeight : 0 
+  const [size, setSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
   });
 
   useEffect(() => {
-    const updateSize = () => {
+    const handleResize = () => {
       setSize({ width: window.innerWidth, height: window.innerHeight });
     };
 
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return size;
 };
 
-const EasterEggButton = ({ icon: Icon, isActive, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`p-3 rounded-full ${
-      isActive ? 'bg-red-500' : 'bg-gray-800'
-    } hover:bg-red-600 transition-all duration-300`}
-  >
-    <Icon size={24} className="text-white" />
-  </button>
-);
+const useTheme = (initialTheme = THEMES.DARK) => {
+  const [theme, setTheme] = useState(initialTheme);
+  const [achievements, setAchievements] = useState(new Set());
 
-const App = () => {
-  const uniformsRef = useRef({
-    iTime: { value: 0 },
-    iResolution: { value: new THREE.Vector2() },
-    scrollOffset: { value: 0 },
-  });
-
-  const appRef = useRef(null);
-  const lenisRef = useRef(null);
-  const audioRef = useRef(null);
-  const { width, height } = useWindowSize();
-
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [activeEasterEgg, setActiveEasterEgg] = useState(null);
-  const [konamiCode, setKonamiCode] = useState([]);
-  
-  const konamiSequence = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-
-  const triggerMatrixEffect = () => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const chars = 'YOUHAVEBEENRICKROLLED@#$%^&*';
+  const changeTheme = useCallback((newTheme) => {
+    setTheme(newTheme);
     
-    canvas.style.cssText = 'position:fixed;top:0;left:0;z-index:1000;pointer-events:none;';
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    document.body.appendChild(canvas);
-
-    const cols = Math.floor(canvas.width / 20);
-    const ypos = Array(cols).fill(0);
-
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const matrix = () => {
-      ctx.fillStyle = '#0001';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#0f0';
-      ctx.font = '15pt monospace';
-
-      ypos.forEach((y, ind) => {
-        const text = chars.charAt(Math.floor(Math.random() * chars.length));
-        ctx.fillText(text, ind * 20, y);
-        ypos[ind] = y > 100 + Math.random() * 10000 ? 0 : y + 20;
-      });
-    };
-
-    const interval = setInterval(matrix, 50);
-    setTimeout(() => {
-      clearInterval(interval);
-      document.body.removeChild(canvas);
-    }, 5000);
-  };
-
-  const initAudioVisualization = () => {
-    if (!audioRef.current) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      audioRef.current = new AudioContext();
+    // Track theme usage and unlock achievement if all themes tried
+    setAchievements(prev => {
+      const newAchievements = new Set(prev);
+      newAchievements.add(`theme_${newTheme}`);
       
-      const oscillator = audioRef.current.createOscillator();
-      const gainNode = audioRef.current.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioRef.current.destination);
-
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(440, audioRef.current.currentTime);
-      gainNode.gain.setValueAtTime(0.1, audioRef.current.currentTime);
-
-      oscillator.start();
-      setIsPlaying(true);
-
-      setTimeout(() => {
-        oscillator.stop();
-        setIsPlaying(false);
-        audioRef.current = null;
-      }, 1000);
-    }
-  };
-
-  const initializeSectionAnimations = () => {
-    // Hero Section Animation
-    gsap.timeline({
-      scrollTrigger: {
-        trigger: '.hero-section',
-        start: 'top top',
-        end: '+=50%',
-        scrub: 1,
-      },
-    })
-    .fromTo('.red-banner', 
-      { clipPath: 'inset(50% 50%)', opacity: 0 },
-      { clipPath: 'inset(0% 0%)', opacity: 0.15, duration: 1.5, ease: 'power3.inOut' }
-    )
-    .to('.hero-content', { opacity: 0, duration: 0.5, ease: 'power2.in' });
-
-    // Grid Animation
-    gsap.timeline({
-      scrollTrigger: {
-        trigger: '.hero-section',
-        start: '15% top',
-        end: '+=100%',
-        scrub: 1,
-      },
-    })
-    .fromTo('.grid-container', 
-      { opacity: 0, scale: 0.8 },
-      { opacity: 1, scale: 1, duration: 1, ease: 'power2.out' }
-    )
-    .to('.grid-tile', {
-      rotationY: 180,
-      stagger: { amount: 1.5, grid: [10, 10], from: 'center', ease: 'power2.inOut' },
+      if (newAchievements.size === Object.keys(THEMES).length) {
+        confetti({
+          particleCount: 100,
+          spread: 160,
+          origin: { y: 0.6 }
+        });
+        newAchievements.add('theme_master');
+      }
+      
+      return newAchievements;
     });
+  }, []);
 
-    // Text Reveal Animation
-    gsap.timeline({
-      scrollTrigger: {
-        trigger: '.text-reveal-section',
-        start: 'top center',
-        end: '+=200%',
-        pin: true,
-        scrub: 1.2,
-      },
-    })
-    .to('.reveal-circle', { scale: 35, duration: 1.5, ease: 'power2.inOut' })
-    .from('.text-line', {
-      y: 120,
-      opacity: 0,
-      stagger: 0.25,
-      duration: 0.8,
-      ease: 'power2.out',
-    }, '-=0.8')
-    .to('.text-line', {
-      y: -120,
-      opacity: 0,
-      stagger: 0.25,
-      duration: 0.8,
-      ease: 'power2.in',
-    }, '+=1');
+  return {
+    theme,
+    changeTheme,
+    currentTheme: THEME_CONFIGS[theme],
+    achievements
   };
+};
+
+const useKonamiCode = (callback) => {
+  const [sequence, setSequence] = useState([]);
+  const konamiCode = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65];
 
   useEffect(() => {
-    const handleKeyPress = (e) => {
-      const newCode = [...konamiCode, e.key];
-      if (newCode.length > konamiSequence.length) newCode.shift();
-      setKonamiCode(newCode);
+    const handleKeyDown = (e) => {
+      const newSequence = [...sequence, e.keyCode];
+      if (newSequence.length > konamiCode.length) {
+        newSequence.shift();
+      }
+      setSequence(newSequence);
 
-      if (newCode.join('') === konamiSequence.join('')) {
-        triggerMatrixEffect();
+      if (newSequence.join(',') === konamiCode.join(',')) {
+        callback();
+        setSequence([]);
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [konamiCode]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sequence, callback]);
+};
 
+// Components
+const EasterEggButton = React.memo(({ icon: Icon, isActive, onClick, tooltip }) => (
+  <div className="relative group">
+    <button
+      onClick={onClick}
+      className={`p-3 rounded-full transform transition-all duration-300 ${
+        isActive ? 'bg-red-500' : 'bg-gray-800'
+      } hover:bg-red-600 hover:scale-105 active:scale-95 hover:rotate-12`}
+    >
+      <Icon className="w-6 h-6 text-white" />
+    </button>
+    <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity bg-black px-2 py-1 rounded text-xs text-white whitespace-nowrap">
+      {tooltip}
+    </span>
+  </div>
+));
+
+const ThemeSelector = React.memo(({ theme, handleThemeChange }) => (
+  <div className="fixed top-4 right-4 flex gap-2 z-50">
+    {Object.entries(THEMES).map(([key, value]) => (
+      <button
+        key={key}
+        onClick={() => handleThemeChange(value)}
+        className={`p-2 rounded-full transition-all duration-300 ${
+          theme === value ? 'scale-110 ring-2 ring-white' : 'opacity-70'
+        }`}
+        title={`Switch to ${key.toLowerCase()} theme`}
+      >
+        {value === THEMES.DARK && <Moon className="w-6 h-6 text-gray-200" />}
+        {value === THEMES.LIGHT && <Sun className="w-6 h-6 text-yellow-400" />}
+        {value === THEMES.CYBER && <Zap className="w-6 h-6 text-cyan-400" />}
+        {value === THEMES.RETRO && <Globe className="w-6 h-6 text-orange-400" />}
+        {value === THEMES.NATURE && <Cloud className="w-6 h-6 text-green-400" />}
+        {value === THEMES.SPACE && <Compass className="w-6 h-6 text-purple-400" />}
+      </button>
+    ))}
+  </div>
+));
+
+const TunnelRoute = React.memo(() => {
+  const tunnelUniformsRef = useRef({
+    iTime: { value: 0 },
+    iResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+    scrollOffset: { value: 0 },
+  });
+
+  const [isExiting, setIsExiting] = useState(false);
+
+  return (
+    <div className={`tunnel-section w-full h-screen relative ${isExiting ? 'fade-out' : ''}`}>
+      <Suspense fallback={<div className="w-full h-full bg-black" />}>
+        <TunnelEffect uniformsRef={tunnelUniformsRef} />
+      </Suspense>
+      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+        <Link
+          to="/"
+          className="text-xl font-bold text-red-500 underline hover:text-red-400 transition-colors"
+          onClick={() => setIsExiting(true)}
+        >
+          Back to Home
+        </Link>
+      </div>
+    </div>
+  );
+});
+
+const App = () => {
+  const { theme, changeTheme, currentTheme, achievements } = useTheme();
+  const { width, height } = useWindowSize();
+  const lenisRef = useRef(null);
+  const audioContextRef = useRef(null);
+
+  const [state, setState] = useState({
+    isPlaying: false,
+    showSecret: false,
+    debugMode: false,
+    matrixMode: false,
+    gameActive: false,
+    currentQuote: 0,
+    developerQuotes: [
+      "I don't always test my code, but when I do, I do it in production",
+      "Why do programmers prefer dark mode? Because light attracts bugs!",
+      "Git push --force: Because sometimes, history needs a little rewriting",
+      "The best code is no code at all",
+      "It works on my machine ¯\\_(ツ)_/¯"
+    ]
+  });
+
+  // Initialize smooth scrolling
   useEffect(() => {
-    lenisRef.current = new Lenis({
+    const lenis = new Lenis({
       lerp: 0.075,
       smooth: true,
       direction: 'vertical',
       smoothWheel: true,
-      smoothTouch: true,
-      touchMultiplier: 1.5,
-      wheelMultiplier: 0.8,
+      wheelMultiplier: 1,
+      touchMultiplier: 2,
     });
 
-    const handleScroll = (e) => {
-      ScrollTrigger.update();
-      uniformsRef.current.scrollOffset.value = e.animatedScroll / 1000;
-      const progress = e.progress * 100;
-      document.documentElement.style.setProperty('--scroll-progress', `${progress}%`);
+    lenisRef.current = lenis;
+
+    const raf = (time) => {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
     };
 
-    lenisRef.current.on('scroll', handleScroll);
-
-    const tickerCallback = (time) => {
-      lenisRef.current?.raf(time * 1000);
-      uniformsRef.current.iTime.value += 0.01;
-    };
-
-    gsap.ticker.add(tickerCallback);
-    gsap.ticker.lagSmoothing(0);
-
-    initializeSectionAnimations();
+    requestAnimationFrame(raf);
 
     return () => {
-      lenisRef.current?.destroy();
-      gsap.ticker.remove(tickerCallback);
+      lenis.destroy();
       ScrollTrigger.getAll().forEach(trigger => trigger.kill());
     };
   }, []);
 
-  useEffect(() => {
-    uniformsRef.current.iResolution.value.set(width, height);
-  }, [width, height]);
+  // Handle audio visualization
+  const initAudioVisualization = useCallback(() => {
+    if (audioContextRef.current) return;
+
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioContextRef.current = new AudioContext();
+      const oscillator = audioContextRef.current.createOscillator();
+      const gainNode = audioContextRef.current.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContextRef.current.destination);
+      
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(440, audioContextRef.current.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioContextRef.current.currentTime);
+
+      oscillator.start();
+      setState(prev => ({ ...prev, isPlaying: true }));
+
+      setTimeout(() => {
+        oscillator.stop();
+        setState(prev => ({ ...prev, isPlaying: false }));
+        audioContextRef.current = null;
+      }, 1000);
+    } catch (error) {
+      console.error('Audio initialization failed:', error);
+    }
+  }, []);
+
+  // Konami code handler
+  useKonamiCode(() => {
+    setState(prev => ({ ...prev, gameActive: true }));
+    confetti({
+      particleCount: 100,
+      spread: 160,
+      origin: { y: 0.6 }
+    });
+  });
 
   return (
-    <>
-      {/* Progress Bar */}
-      <div className="fixed top-0 left-0 w-full h-1 bg-gray-800 z-50">
-        <div
-          className="h-full bg-red-500 transition-all duration-150"
-          style={{ width: 'var(--scroll-progress, 0%)' }}
-        />
-      </div>
+    <BrowserRouter>
+      <Suspense fallback={null}>
+        <CustomCursor />
+      </Suspense>
+      <ThemeSelector theme={theme} handleThemeChange={changeTheme} />
+      <Routes>
+        <Route path="/tunnel" element={<TunnelRoute />} />
+        <Route 
+          path="/" 
+          element={
+            <div className={`relative ${currentTheme.background} ${currentTheme.text} min-h-screen transition-colors duration-500`}>
+              {/* Hero Section */}
+              <section className="hero-section h-screen relative overflow-hidden">
+                <div className="hero-content absolute inset-0 flex flex-col items-center justify-center z-30">
+                  <h1 className={`text-7xl md:text-8xl font-bold text-center mb-8 tracking-tight 
+                    ${currentTheme.accent} ${currentTheme.hover} transition-colors ${state.gameActive ? 'animate-bounce' : ''}`}>
+                    {state.debugMode ? "console.log('Hello World');" : "Welcome to the Matrix"}
+                  </h1>
 
-      {/* Easter Egg Buttons */}
-      <div className="fixed right-4 top-1/2 transform -translate-y-1/2 flex flex-col gap-4 z-50">
-        <EasterEggButton
-          icon={Music}
-          isActive={activeEasterEgg === 'music'}
-          onClick={() => {
-            initAudioVisualization();
-            setActiveEasterEgg('music');
-          }}
-        />
-        <EasterEggButton
-          icon={Brain}
-          isActive={activeEasterEgg === 'ai'}
-          onClick={() => {
-            triggerMatrixEffect();
-            setActiveEasterEgg('ai');
-          }}
-        />
-        <EasterEggButton
-          icon={Wand2}
-          isActive={activeEasterEgg === 'magic'}
-          onClick={() => {
-            setActiveEasterEgg('magic');
-            gsap.to('.hero-content', {
-              rotation: 360,
-              scale: 1.2,
-              duration: 1,
-              ease: 'power2.inOut',
-              yoyo: true,
-              repeat: 1
-            });
-          }}
-        />
-      </div>
+                  {/* Easter Egg Buttons */}
+                  <div className="flex flex-wrap justify-center gap-4">
+                    <EasterEggButton
+                      icon={Terminal}
+                      isActive={state.debugMode}
+                      onClick={() => setState(prev => ({ ...prev, debugMode: !prev.debugMode }))}
+                      tooltip="Toggle debug mode"
+                    />
+                    <EasterEggButton
+                      icon={GitBranch}
+                      isActive={false}
+                      onClick={() => confetti()}
+                      tooltip="Git push --force"
+                    />
+                    <EasterEggButton
+                      icon={Music}
+                      isActive={state.isPlaying}
+                      onClick={initAudioVisualization}
+                      tooltip="Make some noise!"
+                    />
+                    <EasterEggButton
+                      icon={Sparkles}
+                      isActive={state.matrixMode}
+                      onClick={() => setState(prev => ({ ...prev, matrixMode: !prev.matrixMode }))}
+                      tooltip="Toggle Matrix mode"
+                    />
+                  </div>
 
-      <div ref={appRef} className="relative bg-black text-white">
-        <section className="hero-section w-full h-screen relative overflow-hidden">
-          <div className="red-banner absolute inset-0 bg-red-500 z-20" />
-          <div className="hero-content absolute inset-0 flex flex-col items-center justify-center z-30">
-            <h1 className="text-7xl md:text-8xl font-bold text-center mb-8 tracking-tight">
-              Welcome to My Portfolio
-            </h1>
-            <p className="text-xl md:text-2xl opacity-80 max-w-2xl text-center px-4 mb-12">
-              Where AI meets Music • Try the Konami Code!
-            </p>
-            <div className="animate-bounce">
-              <div className="w-8 h-12 border-2 border-white rounded-full flex items-start justify-center p-2">
-                <div className="w-1 h-3 bg-white rounded-full animate-scroll" />
-              </div>
+                  {/* Developer Quote */}
+                  <div 
+                    className={`text-xl font-medium mt-8 cursor-pointer ${currentTheme.accent} ${currentTheme.hover}`}
+                    onClick={() => setState(prev => ({
+                      ...prev,
+                      currentQuote: (prev.currentQuote + 1) % prev.developerQuotes.length
+                    }))}
+                  >
+                    {state.developerQuotes[state.currentQuote]}
+                  </div>
+                </div>
+              </section>
+
+              {/* Board Section */}
+              <Suspense fallback={<div className="w-full h-screen bg-black" />}>
+                <Board />
+              </Suspense>
+
+              {/* Text Reveal Section */}
+              <Suspense fallback={<div className="w-full h-screen bg-black" />}>
+                <TextRevealSection />
+              </Suspense>
+
+              {/* Tunnel Link Section */}
+              <section className="w-full min-h-screen flex items-center justify-center p-8">
+                <Link
+                  to="/tunnel"
+                  className={`text-xl font-bold ${currentTheme.accent} ${currentTheme.hover} transition-colors underline`}
+                >
+                  Explore the Tunnel Effect
+                </Link>
+              </section>
             </div>
-          </div>
-        </section>
-
-        <Board />
-        <TextRevealSection />
-
-        <section className="tunnel-section w-full h-screen relative">
-          <TunnelEffect uniformsRef={uniformsRef} />
-          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <div className="text-center space-y-6 px-4">
-              <h2 className="text-5xl md:text-6xl font-bold">Explore My Work</h2>
-              <p className="text-2xl md:text-3xl opacity-80 max-w-2xl">
-                Discover my projects and creative process
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="w-full min-h-screen bg-gradient-to-b from-black to-gray-900 py-20 px-4 md:px-8">
-          <div className="max-w-7xl mx-auto space-y-20">
-            <div className="text-center mb-16">
-              <h2 className="text-5xl md:text-6xl font-bold mb-6">Featured Projects</h2>
-              <p className="text-2xl opacity-80 max-w-2xl mx-auto">
-                A collection of my best work and creative experiments
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="w-full min-h-screen bg-black flex items-center justify-center p-8">
-          <div className="max-w-4xl w-full text-center space-y-10">
-            <h2 className="text-6xl md:text-7xl font-bold">Let's Connect</h2>
-            <p className="text-2xl md:text-3xl opacity-80 max-w-2xl mx-auto">
-              Ready to start a project together? Let's create something amazing.
-            </p>
-            <div className="mt-12">
-              <button className="px-8 py-4 bg-red-500 text-white rounded-lg text-xl hover:bg-red-600 transition-all duration-300 transform hover:scale-105">
-                Get in Touch
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
-    </>
+          } 
+        />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
