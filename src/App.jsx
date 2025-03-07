@@ -8,8 +8,10 @@ import confetti from 'canvas-confetti';
 import { 
   Music, Brain, Wand2, Terminal, GitBranch, Code2,
   Sparkles, Palette, Gamepad2, Moon, Sun, Cloud,
-  Zap, Globe, Compass
+  Zap, Globe, Compass, User, Cpu, Coffee, Database,
+  Layers, Code, Monitor
 } from 'lucide-react';
+import myPhoto from './assets/banner.jpg';
 
 // Lazy loaded components
 const Board = React.lazy(() => import('./components/GridLayout/Board'));
@@ -183,6 +185,187 @@ const ThemeSelector = React.memo(({ theme, handleThemeChange }) => (
   </div>
 ));
 
+
+// Personal Banner Component with Terminal-Style Design
+const PersonalBanner = React.memo(({ currentTheme }) => {
+  const [showDetails, setShowDetails] = useState(false);
+  const [terminalActive, setTerminalActive] = useState(false);
+  
+  // Personal information mimicking fastfetch output
+  const personalInfo = {
+    username: "pranavraam",
+    hostname: "Vivobook_ASUSLaptop M6500IH_ ",
+    distro: "ArchLinux",
+    kernel: "6.12.15-1-lts",
+    uptime: "9d 11h 01m",
+    packages: "1122",
+    shell: "zsh",
+    resolution: "1920x1080",
+    de: "Hyprland",
+    terminal: "kitty",
+    cpu: "AMD Ryzen 7 4800H with Radeo",
+    gpu: "NVIDIA GeForce GTX 1650 Mobil",
+    memory: " 4636MiB / 15402MiB "
+  };
+
+  // Terminal animation effect
+  useEffect(() => {
+    if (terminalActive) {
+      const timer = setTimeout(() => {
+        setShowDetails(true);
+      }, 800);
+      return () => clearTimeout(timer);
+    } else {
+      setShowDetails(false);
+    }
+  }, [terminalActive]);
+  
+  return (
+    <section className="w-full py-16 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Terminal-style container */}
+        <div className="bg-gray-900 rounded-lg overflow-hidden shadow-2xl border border-gray-700">
+          {/* Terminal header */}
+          <div className="bg-gray-800 p-3 flex items-center justify-between">
+            <div className="flex space-x-2">
+              <div className="w-3 h-3 rounded-full bg-red-500"></div>
+              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+            </div>
+            <div className="text-gray-400 font-mono text-sm">
+              developer@matrix-dev: ~/portfolio
+            </div>
+            <div className="text-gray-400">
+              <Terminal className="w-4 h-4" />
+            </div>
+          </div>
+          
+          {/* Content area */}
+          <div className="flex flex-col md:flex-row">
+            {/* Image section - fixed height to prevent zoom issues */}
+            <div className="md:w-1/3 h-80 md:h-auto relative">
+              <img 
+                src={myPhoto} 
+                alt="Developer" 
+                className="w-full h-full object-cover object-center"
+              />
+              
+              {/* Image overlay with blend mode for terminal feel */}
+              <div className="absolute inset-0 bg-purple-900 bg-opacity-20 mix-blend-overlay"></div>
+              
+              {/* Scanline effect */}
+              <div className="absolute inset-0 pointer-events-none opacity-10" 
+                style={{
+                  backgroundImage: 'linear-gradient(transparent 50%, rgba(0, 0, 0, 0.8) 50%)', 
+                  backgroundSize: '100% 4px'
+                }}>
+              </div>
+            </div>
+            
+            {/* Terminal output section */}
+            <div className="md:w-2/3 p-4 md:p-6 font-mono">
+              {/* Intro and toggle area */}
+              <div className="mb-6">
+                <div className="flex items-center mb-4">
+                  <span className="text-green-400 mr-2">$</span>
+                  <span className="text-white">neofetch</span>
+                  <button 
+                    onClick={() => setTerminalActive(!terminalActive)}
+                    className={`ml-4 px-3 py-1 rounded text-sm ${
+                      terminalActive ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'
+                    } transition-colors`}
+                  >
+                    {terminalActive ? 'Cancel' : 'Execute'}
+                  </button>
+                </div>
+                
+                {/* Dev info */}
+                <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                  <h2 className={`text-3xl font-bold ${currentTheme.accent}`}>
+                    &lt;dev /&gt;
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2 py-1 rounded-md bg-gray-800 text-green-400 text-xs">Full-Stack</span>
+                    <span className="px-2 py-1 rounded-md bg-gray-800 text-blue-400 text-xs">Systems</span>
+                    <span className="px-2 py-1 rounded-md bg-gray-800 text-purple-400 text-xs">Low-Level</span>
+                    <span className="px-2 py-1 rounded-md bg-gray-800 text-yellow-400 text-xs">Open Source</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Animated terminal output */}
+              <div className={`transition-all duration-500 ${
+                terminalActive ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'
+              }`}>
+                {/* Loading animation */}
+                <div className={`${showDetails ? 'hidden' : 'block'}`}>
+                  <div className="text-yellow-400 mb-2">Loading system information...</div>
+                  <div className="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                    <div className="bg-green-500 h-full animate-pulse" style={{width: '60%'}}></div>
+                  </div>
+                </div>
+                
+                {/* System info */}
+                <div className={`${showDetails ? 'block' : 'hidden'} transition-opacity duration-300`}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4">
+                    {Object.entries(personalInfo).map(([key, value], index) => (
+                      <div key={key} 
+                        className="flex items-start" 
+                        style={{
+                          animation: `fadeIn 0.3s ${index * 0.05}s both`
+                        }}
+                      >
+                        <span className="w-28 text-purple-400">{key}</span>
+                        <span className="flex-1 text-green-300">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* ASCII logo - small simple one that won't cause errors */}
+                  <div className="mt-4 text-blue-400 hidden md:block">
+                    <pre className="text-sm font-mono leading-none">
+{`
+ ██████╗ ██████╗  ██████╗ ███████╗
+ ██╔════╝██╔═══██╗██╔══██╗██╔════╝
+ ██║     ██║   ██║██║  ██║█████╗  
+ ██║     ██║   ██║██║  ██║██╔══╝  
+ ╚██████╗╚██████╔╝██████╔╝███████╗
+  ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝
+`}
+</pre>
+
+                  </div>
+                </div>
+              </div>
+              
+              {/* Quote */}
+              <div className="mt-6 border-t border-gray-700 pt-4">
+                <p className="text-gray-400 italic">
+                  "Writing AI models by day, debugging them by night, questioning my life choices in between."
+                </p>
+              </div>
+              
+              {/* Command line prompt */}
+              <div className="mt-6 flex items-center">
+                <span className="text-green-400 mr-2">$</span>
+                <span className="text-white animate-pulse">_</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Add some custom CSS for animations */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </section>
+  );
+});
+
 const TunnelRoute = React.memo(() => {
   const tunnelUniformsRef = useRef({
     iTime: { value: 0 },
@@ -315,7 +498,7 @@ const App = () => {
                 <div className="hero-content absolute inset-0 flex flex-col items-center justify-center z-30">
                   <h1 className={`text-7xl md:text-8xl font-bold text-center mb-8 tracking-tight 
                     ${currentTheme.accent} ${currentTheme.hover} transition-colors ${state.gameActive ? 'animate-bounce' : ''}`}>
-                    {state.debugMode ? "console.log('Hello World');" : "Welcome to the Matrix"}
+                    {state.debugMode ? "console.log('Hello World');" : "Welcome to My Portfolio"}
                   </h1>
 
                   {/* Easter Egg Buttons */}
@@ -358,6 +541,9 @@ const App = () => {
                   </div>
                 </div>
               </section>
+
+              {/* Personal Banner Section - Added Here */}
+              <PersonalBanner currentTheme={currentTheme} />
 
               {/* Board Section */}
               <Suspense fallback={<div className="w-full h-screen bg-black" />}>
